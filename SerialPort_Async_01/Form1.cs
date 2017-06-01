@@ -133,6 +133,7 @@ namespace SerialPort_Async_01
             Tmr_Send_Cmd.Elapsed += new ElapsedEventHandler(Tmr_Send_Cmd_Elapsed); 
             Serial_CDC.DataReceived += new SerialDataReceivedEventHandler(RS_DataReceivedHandler);
         }
+
         //================================================================================================
         #region Timer_Init
         private void InitTimer()
@@ -197,8 +198,10 @@ namespace SerialPort_Async_01
                         cb_COM_Sel.Text = strCom;
                     }
             }
+            Serial_CDC.Close();
 
             if (goodComFlag == false) { MessageBox.Show("No Laser Connected"); }
+            else if (goodComFlag == true) { PressComConnect(); }
 
             return true;
         }
@@ -239,8 +242,17 @@ namespace SerialPort_Async_01
         #region bt_Button_Com_Click
         private void Bt_Connect_Com_Click(object sender, EventArgs e)
         {
+            PressComConnect();
+        }
+        #endregion
+        //================================================================================================
+        #region Button COM connect Method decouple from event
+        private void PressComConnect()
+        {
             if (Serial_CDC.IsOpen)//COM oppened
             {
+                Tmr_Send_Cmd.Stop();
+                Thread.Sleep(100);
                 Serial_CDC.Close();
                 bt_Connect_Com.BackColor = Color.Orange;
                 bt_Connect_Com.Text = "Connect";
@@ -262,6 +274,7 @@ namespace SerialPort_Async_01
                 }
                 catch
                 {
+                    Tmr_Send_Cmd.Stop();
                     Serial_CDC.Close();//close port
                     Serial_CDC.Dispose();
                     bt_Connect_Com.BackColor = Color.Orange;
@@ -398,9 +411,10 @@ namespace SerialPort_Async_01
         {
             if (Bt_TestRun.BackColor == Color.Orange)
             {
+                pointerTestCycle = 0;
+                arrLght = initial_Call.Length;
                 Bt_TestRun.BackColor = Color.Green;
                 Tmr_Send_Cmd.Start();
-                //Task<bool> rtn = WastingTime(2000);
             }
             else if (Bt_TestRun.BackColor == Color.Green)
             {
@@ -414,6 +428,15 @@ namespace SerialPort_Async_01
             await Task.Delay(timeWt);//last level here
             Debug.WriteLine("TaskEnd");
             return true;
+        }
+        //================================================================================================
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Tmr_Send_Cmd.Stop();
+            Tmr_Send_Cmd.Dispose();
+            Serial_CDC.Close();
+            Serial_CDC.Dispose();
+            Thread.Sleep(200);
         }
         //================================================================================================
 
